@@ -1,0 +1,17 @@
+<html><body>
+	<style>
+		* {
+			padding: 0;
+			margin: 0;
+		}
+	</style>
+	<canvas id="canvas"></canvas>
+	<script>
+		const urlparams = new URLSearchParams(window.location.search);
+		//window.MODE = "DIRECT"; // draw to an on-screen canvas
+		//window.MODE = "INDIRECT"; // draw to an orphan canvas and copy
+		//window.MODE = "OFFSCREEN"; // draw to an OffscreenCanvas and copy
+		window.MODE = urlparams.get("mode") || "OFFSCREEN";
+	</script>
+	<script src="./parcel.js"></script>
+</body></html>

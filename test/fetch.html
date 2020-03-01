@@ -1,0 +1,17 @@
+<html><body>
+	<style>
+		* {
+			padding: 0;
+			margin: 0;
+		}
+	</style>
+	<canvas id="canvas"></canvas>
+	<script src="wmf.js"></script>
+	<script>
+		(async() => {
+			const res = await fetch("static/image1.wmf");
+			const ab = await res.arrayBuffer();
+			WMF.draw_canvas(ab, document.getElementById("canvas"));
+		})();
+	</script>
+</body></html>

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<!-- wmf.js (C) 2020-present  SheetJS http://sheetjs.com -->
+<!-- vim: set ts=2: -->
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<title>wmf.js Live Demo</title>
+<style>
+#drop{
+	border:2px dashed #bbb;
+	-moz-border-radius:5px;
+	-webkit-border-radius:5px;
+	border-radius:5px;
+	padding:25px;
+	text-align:center;
+	font:20pt bold,"Vollkorn";color:#bbb
+}
+#b64data{
+	width:100%;
+}
+a { text-decoration: none }
+</style>
+</head>
+<body>
+<pre>
+<b><a href="http://sheetjs.com">SheetJS wmf.js Preview Live Demo</a></b>
+
+<a href="https://github.com/SheetJS/js-wmf">Source Code Repo</a>
+<a href="https://github.com/SheetJS/js-wmf/issues">Issues?  Something look weird?  Click here and report an issue</a>
+<div id="drop">Drop a WMF File here to Preview data</div>
+<input type="file" name="xlfile" id="xlf" /> ... or click here to select a file
+
+<pre id="out"></pre>
+<canvas id="htmlout"></canvas>
+<br />
+<script src="dist/wmf.js"></script>
+<script>
+/*jshint browser:true */
+/* eslint-env browser */
+/*global Uint8Array, console */
+/*global WMF */
+/* exported b64it, setfmt */
+/* eslint no-use-before-define:0 */
+var HTMLOUT = document.getElementById('htmlout');
+
+var do_file = function do_file(files) {
+	var f = files[0];
+	var reader = new FileReader();
+	reader.onload = function(e) {
+		var data = e.target.result;
+		WMF.draw_canvas(data, HTMLOUT);
+	};
+	reader.readAsArrayBuffer(f);
+};
+
+(function() {
+	var drop = document.getElementById('drop');
+	if(!drop.addEventListener) return;
+
+	function handleDrop(e) {
+		e.stopPropagation();
+		e.preventDefault();
+		do_file(e.dataTransfer.files);
+	}
+
+	function handleDragover(e) {
+		e.stopPropagation();
+		e.preventDefault();
+		e.dataTransfer.dropEffect = 'copy';
+	}
+
+	drop.addEventListener('dragenter', handleDragover, false);
+	drop.addEventListener('dragover', handleDragover, false);
+	drop.addEventListener('drop', handleDrop, false);
+})();
+
+(function() {
+	var xlf = document.getElementById('xlf');
+	if(!xlf.addEventListener) return;
+	function handleFile(e) { do_file(e.target.files); }
+	xlf.addEventListener('change', handleFile, false);
+})();
+	var _gaq = _gaq || [];
+	_gaq.push(['_setAccount', 'UA-36810333-1']);
+	_gaq.push(['_trackPageview']);
+
+	(function() {
+		var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+		ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+		var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+	})();
+</script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+{
+	"name": "wmf",
+	"version": "1.0.0",
+	"author": "sheetjs",
+	"description": "Windows MetaFile (WMF) parser",
+	"keywords": [ "wmf", "image" ],
+	"main": "./dist/wmf.node.js",
+	"browser": "./js/index.js",
+	"dependencies": {
+	},
+	"devDependencies": {
+		"source-map-loader": "^0.2.4",
+		"uglifyjs-webpack-plugin": "^2.2.0"
+	},
+	"homepage": "https://sheetjs.com/",
+	"files": ["dist/", "LICENSE", "README.md", "js/"],
+	"bugs": { "url": "https://github.com/SheetJS/js-wmf/issues" },
+	"license": "Apache-2.0",
+	"engines": { "node": ">=12.0" }
+}

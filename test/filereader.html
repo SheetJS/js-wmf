@@ -1,0 +1,21 @@
+<html><body>
+	<style>
+		* {
+			padding: 0;
+			margin: 0;
+		}
+  </style>
+  <input type="file" id="file"><label for="file">Click here to select a file</label><br/>
+	<canvas id="canvas"></canvas>
+	<script src="wmf.js"></script>
+	<script>
+    document.getElementById("file").addEventListener("change", (e) => {
+      const files = e.target.files, f = files[0];
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        WMF.draw_canvas(evt.target.result, document.getElementById("canvas"));
+      };
+      reader.readAsArrayBuffer(f);
+    }, false);
+	</script>
+</body></html>

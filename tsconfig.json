@@ -1,0 +1,10 @@
+{
+	"compilerOptions": {
+		"target": "es5",
+		"moduleResolution": "node",
+		"outDir": "./js",
+		"lib": [ "es5", "DOM" ],
+		"sourceMap": true,
+		"noImplicitReturns": true
+	}
+}
