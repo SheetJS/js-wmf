@@ -164,29 +164,37 @@ const parse_dib = (data: PreppedBytes) => {
 }
 
 const add_to_objects = (objects: PlaybackDeviceContextState[], obj: PlaybackDeviceContextState): void => {
-	let found = false;
-	for(var i = 0; i < objects.length; ++i) if(!objects[i]) { objects[i] = obj; found = true; }
-	if(!found) objects.push(obj);
+	for(var i = 0; i < objects.length; ++i) if(!objects[i]) { objects[i] = obj; return }
+	objects.push(obj);
 }
 
 export const get_actions_prepped_bytes = (data: PreppedBytes): Action[] => {
 	const out: Action[] = [];
 
-	/* 2.3.22 META_HEADER */
+	/* 2.3.2.2 META_HEADER */
 	// Type (2 bytes) must be 1 or 2
 	let h = data.read_shift(2);
 	if(h != 1 && h != 2) throw `Header: Type ${h} must be 1 or 2`;
+
 	// HeaderSize expected to be 9
 	if((h = data.read_shift(2)) != 9) throw `Header: HeaderSize ${h} must be 9`;
+
 	// Version (2 bytes) 1 or 3
 	h = data.read_shift(2);
 	if(h != 0x0100 && h != 0x0300) throw `Header: Version ${h} must be 0x0100 or 0x0300`;
-	// SizeLow
-	// SizeHigh
+
+	// SizeLow / SizeHigh
+	data.l += 4;
+
 	// #Objects
+	const NumberOfObjects = data.read_shift(2);
+	let objects: PlaybackDeviceContextState[] = Array.from({length: NumberOfObjects}, () => null);
+
 	// MaxRecord
+	data.l += 4;
+
 	// NumberOfMembers
-	data.l = 18;
+	data.l += 2;
 
 	let rt = 0;
 
@@ -197,7 +205,6 @@ export const get_actions_prepped_bytes = (data: PreppedBytes): Action[] => {
 	let EnhancedMetafileDataSize = 0;
 	let bufs: RawBytes[] = [];
 
-	let objects: PlaybackDeviceContextState[] = [];
 	let states: PlaybackDeviceContextState[] = [];
 	let state: PlaybackDeviceContextState = {};
 	let sidx = -1;
@@ -209,12 +216,10 @@ export const get_actions_prepped_bytes = (data: PreppedBytes): Action[] => {
 		rt = data.read_shift(2);
 		let Record = WMFRecords[rt];
 		if(rt == 0x0000) break; // META_EOF
-
 		switch(rt) {
 			case 0x0626: { // META_ESCAPE
 				const EscapeFunction = data.read_shift(2);
 				const Escape = WMFEscapes[EscapeFunction];
-				//console.log("::", Escape);
 				/* 2.3.6 */
 				switch(EscapeFunction) {
 					case 0x000F: { // META_ESCAPE_ENHANCED_METAFILE
@@ -335,7 +340,7 @@ export const get_actions_prepped_bytes = (data: PreppedBytes): Action[] => {
 				const nPoints = data.read_shift(2);
 				const points: Array<Point> = [];
 				for(let i = 0; i < nPoints; ++i) points.push([data.read_shift(2), data.read_shift(2)])
-				out.push({t: "poly", p: points, g: rt !== 0x0325, s: state});
+				out.push({t: "poly", p: points, g: rt !== 0x0325, s: Object.assign({}, state)});
 			} break;
 
 			case 0x0538: { // 2.3.3.16 META_POLYPOLYGON
@@ -347,7 +352,7 @@ export const get_actions_prepped_bytes = (data: PreppedBytes): Action[] => {
 				for(let i = 0; i < szs.length; ++i) {
 					polys[i] = [];
 					for(let j = 0; j < szs[i]; ++j) polys[i].push([data.read_shift(2), data.read_shift(2)])
-					out.push({t: "poly", p: polys[i], g: true, s: state});
+					out.push({t: "poly", p: polys[i], g: true, s: Object.assign({}, state)});
 				}
 			} break;
 
@@ -403,19 +408,16 @@ export const get_actions_prepped_bytes = (data: PreppedBytes): Action[] => {
 
 			case 0x01F0: { // 2.3.4.7 META_DELETEOBJECT
 				const ObjectIndex = data.read_shift(2);
-				//console.log("DELETE", ObjectIndex, objects[ObjectIndex]);
 				objects[ObjectIndex] = null;
 			} break;
 
 			case 0x012C: { // 2.3.4.9 META_SELECTCLIPREGION
 				const Region = data.read_shift(2);
-				//console.log("CLIPREGION", Region, objects[Region]);
 				//Object.assign(state, objects[Region]);
 			} break;
 
 			case 0x012D: { // 2.3.4.10 META_SELECTOBJECT
 				const ObjectIndex = data.read_shift(2);
-				//console.log("SELECT", ObjectIndex, objects[ObjectIndex]);
 				Object.assign(state, objects[ObjectIndex]);
 				// TODO!!
 			} break;
@@ -482,19 +484,16 @@ export const get_actions_prepped_bytes = (data: PreppedBytes): Action[] => {
 			// #endregion
 
 			default:
-				if(!Record) throw `Record: Unrecognized type 0x${rt.toString(16)}`;
+				//if(!Record) throw `Record: Unrecognized type 0x${rt.toString(16)}`;
 				console.log(Record);
 		}
 		data.l = end;
-		//if(rt != 0x0626) console.log(Record);
 	}
 	if(rt !== 0) throw `Record: Last Record Type ${rt} is not EOF type`;
 	return out;
 }
 
 export const image_size_prepped_bytes = (data: PreppedBytes): [number, number] => {
-	const origin: Point = [NaN, NaN], extents: Point = [NaN, NaN];
-
 	/* 2.3.22 META_HEADER */
 	// Type (2 bytes) must be 1 or 2
 	let h = data.read_shift(2);
@@ -514,20 +513,14 @@ export const image_size_prepped_bytes = (data: PreppedBytes): [number, number] =
 
 		rt = data.read_shift(2);
 		if(rt == 0x0000) break; // META_EOF
-
-		switch(rt) {
-			case 0x020C: // 2.3.5.30 META_SETWINDOWEXT
-				extents[1] = data.read_shift(2);
-				extents[0] = data.read_shift(2);
-				break;
-
-			case 0x020B: // 2.3.5.31 META_SETWINDOWORG
-				origin[1] = data.read_shift(2);
-				origin[0] = data.read_shift(2);
-				break;
+		if(rt == 0x020C) {// 2.3.5.30 META_SETWINDOWEXT
+			const extents: [number, number] = [NaN, NaN];
+			extents[1] = data.read_shift(2);
+			extents[0] = data.read_shift(2);
+			return extents;
 		}
 		data.l = end;
 	}
 
-	return [extents[0] - origin[0], extents[1] - origin[1]];
+	return [NaN, NaN];
 };

@@ -10,7 +10,7 @@ module.exports = {
 	output: {
 		library: 'WMF',
 		libraryTarget: 'var',
-		filename: 'wmf.js',
+		filename: 'wmf.js'
 	},
 	node: { process: false },
 	module: {

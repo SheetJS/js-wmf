@@ -50,18 +50,16 @@ var parse_dib = function (data) {
     return out;
 };
 var add_to_objects = function (objects, obj) {
-    var found = false;
     for (var i = 0; i < objects.length; ++i)
         if (!objects[i]) {
             objects[i] = obj;
-            found = true;
+            return;
         }
-    if (!found)
-        objects.push(obj);
+    objects.push(obj);
 };
 exports.get_actions_prepped_bytes = function (data) {
     var out = [];
-    /* 2.3.22 META_HEADER */
+    /* 2.3.2.2 META_HEADER */
     // Type (2 bytes) must be 1 or 2
     var h = data.read_shift(2);
     if (h != 1 && h != 2)
@@ -73,12 +71,15 @@ exports.get_actions_prepped_bytes = function (data) {
     h = data.read_shift(2);
     if (h != 0x0100 && h != 0x0300)
         throw "Header: Version " + h + " must be 0x0100 or 0x0300";
-    // SizeLow
-    // SizeHigh
+    // SizeLow / SizeHigh
+    data.l += 4;
     // #Objects
+    var NumberOfObjects = data.read_shift(2);
+    var objects = Array.from({ length: NumberOfObjects }, function () { return null; });
     // MaxRecord
+    data.l += 4;
     // NumberOfMembers
-    data.l = 18;
+    data.l += 2;
     var rt = 0;
     /* used for EMF */
     var escapecnt = 0;
@@ -86,7 +87,6 @@ exports.get_actions_prepped_bytes = function (data) {
     var RemainingBytes = 0;
     var EnhancedMetafileDataSize = 0;
     var bufs = [];
-    var objects = [];
     var states = [];
     var state = {};
     var sidx = -1;
@@ -102,7 +102,6 @@ exports.get_actions_prepped_bytes = function (data) {
                 { // META_ESCAPE
                     var EscapeFunction = data.read_shift(2);
                     var Escape = Records_1.WMFEscapes[EscapeFunction];
-                    //console.log("::", Escape);
                     /* 2.3.6 */
                     switch (EscapeFunction) {
                         case 0x000F:
@@ -236,7 +235,7 @@ exports.get_actions_prepped_bytes = function (data) {
                     var points = [];
                     for (var i = 0; i < nPoints; ++i)
                         points.push([data.read_shift(2), data.read_shift(2)]);
-                    out.push({ t: "poly", p: points, g: rt !== 0x0325, s: state });
+                    out.push({ t: "poly", p: points, g: rt !== 0x0325, s: Object.assign({}, state) });
                 }
                 break;
             case 0x0538:
@@ -251,7 +250,7 @@ exports.get_actions_prepped_bytes = function (data) {
                         polys[i] = [];
                         for (var j = 0; j < szs[i]; ++j)
                             polys[i].push([data.read_shift(2), data.read_shift(2)]);
-                        out.push({ t: "poly", p: polys[i], g: true, s: state });
+                        out.push({ t: "poly", p: polys[i], g: true, s: Object.assign({}, state) });
                     }
                 }
                 break;
@@ -309,21 +308,18 @@ exports.get_actions_prepped_bytes = function (data) {
             case 0x01F0:
                 { // 2.3.4.7 META_DELETEOBJECT
                     var ObjectIndex = data.read_shift(2);
-                    //console.log("DELETE", ObjectIndex, objects[ObjectIndex]);
                     objects[ObjectIndex] = null;
                 }
                 break;
             case 0x012C:
                 { // 2.3.4.9 META_SELECTCLIPREGION
                     var Region = data.read_shift(2);
-                    //console.log("CLIPREGION", Region, objects[Region]);
                     //Object.assign(state, objects[Region]);
                 }
                 break;
             case 0x012D:
                 { // 2.3.4.10 META_SELECTOBJECT
                     var ObjectIndex = data.read_shift(2);
-                    //console.log("SELECT", ObjectIndex, objects[ObjectIndex]);
                     Object.assign(state, objects[ObjectIndex]);
                     // TODO!!
                 }
@@ -378,19 +374,16 @@ exports.get_actions_prepped_bytes = function (data) {
                 break;
             // #endregion
             default:
-                if (!Record)
-                    throw "Record: Unrecognized type 0x" + rt.toString(16);
+                //if(!Record) throw `Record: Unrecognized type 0x${rt.toString(16)}`;
                 console.log(Record);
         }
         data.l = end;
-        //if(rt != 0x0626) console.log(Record);
     }
     if (rt !== 0)
         throw "Record: Last Record Type " + rt + " is not EOF type";
     return out;
 };
 exports.image_size_prepped_bytes = function (data) {
-    var origin = [NaN, NaN], extents = [NaN, NaN];
     /* 2.3.22 META_HEADER */
     // Type (2 bytes) must be 1 or 2
     var h = data.read_shift(2);
@@ -411,18 +404,14 @@ exports.image_size_prepped_bytes = function (data) {
         rt = data.read_shift(2);
         if (rt == 0x0000)
             break; // META_EOF
-        switch (rt) {
-            case 0x020C: // 2.3.5.30 META_SETWINDOWEXT
-                extents[1] = data.read_shift(2);
-                extents[0] = data.read_shift(2);
-                break;
-            case 0x020B: // 2.3.5.31 META_SETWINDOWORG
-                origin[1] = data.read_shift(2);
-                origin[0] = data.read_shift(2);
-                break;
+        if (rt == 0x020C) { // 2.3.5.30 META_SETWINDOWEXT
+            var extents = [NaN, NaN];
+            extents[1] = data.read_shift(2);
+            extents[0] = data.read_shift(2);
+            return extents;
         }
         data.l = end;
     }
-    return [extents[0] - origin[0], extents[1] - origin[1]];
+    return [NaN, NaN];
 };
 //# sourceMappingURL=wmf.js.map

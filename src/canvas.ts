@@ -27,12 +27,16 @@ export const render_actions_to_context = (out: Action[], ctx: CanvasRenderingCon
 		switch(act.t) {
 			case "poly":
 				ctx.beginPath();
+				if(act.s.Pen.Color != null) ctx.strokeStyle = css_color(act.s.Pen.Color);
+				if(act.s.Pen.Width > 0) ctx.lineWidth = act.s.Pen.Width;
+				if(act.s.Brush.Color != null) ctx.fillStyle = css_color(act.s.Brush.Color);
 				ctx.moveTo(act.p[0][0], act.p[0][1]);
 				act.p.slice(1).forEach(([x,y]) => {
 					ctx.lineTo(x, y);
 				});
 				if(act.g) ctx.closePath();
-				ctx.stroke();
+				if(act.s.Pen.Style != 5) ctx.stroke();
+				if(act.s.Brush.Style != 1) ctx.fill();
 				break;
 			case "text":
 				if(act.s && act.s.TextColor) ctx.fillStyle = css_color(act.s.TextColor);
