@@ -88,5 +88,5 @@ granted by the Apache 2.0 License are reserved by the Original Author.
 
 ## References
 
- - [MS-WMF]: Windows Metafile Format
+ - `MS-WMF`: Windows Metafile Format
 

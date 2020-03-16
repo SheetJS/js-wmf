@@ -1,6 +1,6 @@
 {
 	"name": "wmf",
-	"version": "1.0.1",
+	"version": "1.0.2",
 	"author": "sheetjs",
 	"description": "Windows MetaFile (WMF) parser",
 	"keywords": [
@@ -63,6 +63,6 @@
 	},
 	"license": "Apache-2.0",
 	"engines": {
-		"node": ">=12.0"
+		"node": ">=0.8"
 	}
 }
